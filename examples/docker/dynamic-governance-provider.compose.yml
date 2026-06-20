@@ -1,0 +1,22 @@
+services:
+  cortex-agent:
+    image: ghcr.io/blackbirdsystems/cortex-agent-cell:latest
+    environment:
+      GOVERNANCE_DYNAMIC_PROVIDERS_ENABLED: "true"
+      GOVERNANCE_PROVIDER_DIR: /var/run/cortex-governance/providers
+    volumes:
+      - governance-provider-sockets:/var/run/cortex-governance/providers
+
+  governance-provider-example:
+    image: golang:1.24
+    command:
+      - sh
+      - -lc
+      - cd /workspace && go run ./examples/go-dynamic-provider -socket /var/run/cortex-governance/providers/example/provider.sock
+    working_dir: /workspace
+    volumes:
+      - ..:/workspace
+      - governance-provider-sockets:/var/run/cortex-governance/providers
+
+volumes:
+  governance-provider-sockets:

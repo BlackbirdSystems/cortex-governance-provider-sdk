@@ -1,0 +1,7 @@
+{
+  "name": "example-python",
+  "socket_path": "provider.sock",
+  "protocol_version": "v1",
+  "display_name": "Example Python Dynamic Provider",
+  "description": "Reference Python HTTP-over-UDS governance provider"
+}

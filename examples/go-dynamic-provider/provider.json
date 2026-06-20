@@ -1,0 +1,7 @@
+{
+  "name": "example",
+  "socket_path": "provider.sock",
+  "protocol_version": "v1",
+  "display_name": "Example Dynamic Provider",
+  "description": "Reference HTTP-over-UDS governance provider"
+}

@@ -1,0 +1,141 @@
+package dynamicprovider
+
+import (
+	"github.com/mark3labs/mcp-go/mcp"
+)
+
+const (
+	ProtocolVersion                = "v1"
+	DynamicProviderSignatureHeader = "X-Cortex-Dynamic-Provider-Signature"
+	DynamicProviderTimestampHeader = "X-Cortex-Dynamic-Provider-Timestamp"
+	DynamicProviderKeyHeader       = "X-Cortex-Dynamic-Provider-Key"
+)
+
+type Meta struct {
+	Name            string `json:"name"`
+	ProtocolVersion string `json:"protocol_version"`
+	DisplayName     string `json:"display_name"`
+	Description     string `json:"description"`
+}
+
+type TenantPolicy struct {
+	TenantID string `json:"tenant_id"`
+	Subject  string `json:"subject"`
+}
+
+type Context struct {
+	Authorization string        `json:"authorization,omitempty"`
+	Policy        *TenantPolicy `json:"policy,omitempty"`
+}
+
+type Request struct {
+	Provider   string                 `json:"provider"`
+	Action     string                 `json:"action"`
+	ResourceID string                 `json:"resource_id"`
+	Params     map[string]interface{} `json:"params,omitempty"`
+}
+
+type ProtectedResource struct {
+	Provider     string `json:"provider"`
+	ResourceType string `json:"resource_type"`
+	ResourceID   string `json:"resource_id"`
+}
+
+type CapabilityGrant struct {
+	TenantID     string   `json:"tenant_id"`
+	Provider     string   `json:"provider"`
+	ResourceType string   `json:"resource_type"`
+	ResourceID   string   `json:"resource_id"`
+	Scopes       []string `json:"scopes"`
+	ExpiresAt    int64    `json:"expires_at"`
+	Signature    string   `json:"signature,omitempty"`
+}
+
+type ToolsResponse struct {
+	Tools []mcp.Tool `json:"tools"`
+}
+
+type MapRequestInput struct {
+	ToolName  string                 `json:"tool_name"`
+	Arguments map[string]interface{} `json:"arguments,omitempty"`
+}
+
+type MapRequestOutput struct {
+	Request *Request `json:"request"`
+}
+
+type ResolveResourceInput struct {
+	Context Context  `json:"context"`
+	Request *Request `json:"request"`
+}
+
+type ResolveResourceOutput struct {
+	Resource *ProtectedResource `json:"resource"`
+}
+
+type MapScopeInput struct {
+	Action string `json:"action"`
+}
+
+type MapScopeOutput struct {
+	Scope string `json:"scope"`
+}
+
+type ExecuteInput struct {
+	Context Context  `json:"context"`
+	Request *Request `json:"request"`
+}
+
+type DelegatedDownload struct {
+	ResourceID       string                 `json:"resource_id"`
+	Filename         string                 `json:"filename,omitempty"`
+	ContentType      string                 `json:"content_type,omitempty"`
+	ExpiresInSeconds int                    `json:"expires_in_seconds,omitempty"`
+	Params           map[string]interface{} `json:"params,omitempty"`
+	NextStep         string                 `json:"next_step,omitempty"`
+}
+
+type ParseSettingsInput struct {
+	TenantID string                 `json:"tenant_id"`
+	Token    string                 `json:"token,omitempty"`
+	Settings map[string]interface{} `json:"settings,omitempty"`
+}
+
+type ParseSettingsOutput struct {
+	Grants []CapabilityGrant `json:"grants"`
+}
+
+type ComputeBindingInput struct {
+	Secret string                 `json:"secret"`
+	Params map[string]interface{} `json:"params,omitempty"`
+}
+
+type BindingAttribute struct {
+	Value     string `json:"value"`
+	Signature string `json:"signature,omitempty"`
+}
+
+type BindingEnvelope struct {
+	Bindings map[string]BindingAttribute `json:"bindings,omitempty"`
+}
+
+type ComputeBindingOutput struct {
+	Binding  map[string]string `json:"binding,omitempty"`
+	Envelope *BindingEnvelope  `json:"envelope,omitempty"`
+}
+
+type IsAvailableInput struct {
+	Context  Context `json:"context"`
+	TenantID string  `json:"tenant_id,omitempty"`
+}
+
+type FetchDownloadInput struct {
+	Context  Context           `json:"context"`
+	Download DelegatedDownload `json:"download"`
+}
+
+type FetchDownloadOutput struct {
+	ContentBase64 string `json:"content_base64"`
+	ContentType   string `json:"content_type,omitempty"`
+	Filename      string `json:"filename,omitempty"`
+}
