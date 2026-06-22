@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
 	"encoding/base64"
 	"flag"
 	"fmt"
@@ -143,12 +145,17 @@ func execute(input dynamicprovider.ExecuteInput) (map[string]any, error) {
 }
 
 func parseSettings(input dynamicprovider.ParseSettingsInput) (dynamicprovider.ParseSettingsOutput, error) {
+	sig, ok := input.Settings["example_api_sig"].(string)
+	if !ok || strings.TrimSpace(sig) == "" {
+		return dynamicprovider.ParseSettingsOutput{}, fmt.Errorf("unauthorized settings: example_api_sig is required")
+	}
+
 	return dynamicprovider.ParseSettingsOutput{
 		Grants: []dynamicprovider.CapabilityGrant{
 			{
 				TenantID:     input.TenantID,
 				Provider:     providerName,
-				ResourceType: "api",
+				ResourceType: "echo_resource",
 				ResourceID:   "*",
 				Scopes:       []string{"invoke_echo"},
 				ExpiresAt:    time.Now().Add(24 * time.Hour).Unix(),
@@ -165,20 +172,38 @@ func computeBinding(input dynamicprovider.ComputeBindingInput) (dynamicprovider.
 		}
 		bindingAttributes[key] = fmt.Sprint(value)
 	}
+
 	if len(bindingAttributes) > 1 {
 		envelope := &dynamicprovider.BindingEnvelope{Bindings: map[string]dynamicprovider.BindingAttribute{}}
 		for key, value := range bindingAttributes {
+			payload := fmt.Sprintf("cortex-example-binding\nv1\n%s\n%d:%s", key, len([]byte(value)), value)
+			h := hmac.New(sha256.New, []byte(input.Secret))
+			h.Write([]byte(payload))
+			sig := base64.RawURLEncoding.EncodeToString(h.Sum(nil))
+
 			envelope.Bindings[key] = dynamicprovider.BindingAttribute{
 				Value:     value,
-				Signature: "example-binding-" + key,
+				Signature: sig,
 			}
 		}
 		return dynamicprovider.ComputeBindingOutput{Envelope: envelope}, nil
 	}
+
+	// Single binding signature case (e.g. example_api_key -> example_api_sig)
 	binding := map[string]string{}
+	var attrKey, attrVal string
+	for k, v := range bindingAttributes {
+		attrKey = k
+		attrVal = v
+	}
+
 	for key := range input.Params {
 		if strings.HasSuffix(key, "_sig") {
-			binding[key] = "example-binding"
+			payload := fmt.Sprintf("cortex-example-binding\nv1\n%s\n%d:%s", attrKey, len([]byte(attrVal)), attrVal)
+			h := hmac.New(sha256.New, []byte(input.Secret))
+			h.Write([]byte(payload))
+			sig := base64.RawURLEncoding.EncodeToString(h.Sum(nil))
+			binding[key] = sig
 		}
 	}
 	return dynamicprovider.ComputeBindingOutput{Binding: binding}, nil
