@@ -26,6 +26,7 @@ It also demonstrates resource-scoped grant synthesis in `parse-settings`:
 - provider settings include `example_python_resources`
 - each workspace entry can mint one `workspace` grant and multiple `document` grants
 - request mapping uses `workspace_id` + `document_id` so the API request/response flow lines up with the generated grants
+- `/v1/provider/meta` includes a live `binding_schema` block so the agent and CLI can discover binding inputs
 
 ## Install
 

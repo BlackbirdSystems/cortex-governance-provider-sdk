@@ -12,10 +12,26 @@ const (
 )
 
 type Meta struct {
-	Name            string `json:"name"`
-	ProtocolVersion string `json:"protocol_version"`
-	DisplayName     string `json:"display_name"`
-	Description     string `json:"description"`
+	Name            string         `json:"name"`
+	ProtocolVersion string         `json:"protocol_version"`
+	DisplayName     string         `json:"display_name"`
+	Description     string         `json:"description"`
+	BindingSchema   *BindingSchema `json:"binding_schema,omitempty"`
+}
+
+type BindingInputSchema struct {
+	Name         string `json:"name"`
+	Description  string `json:"description,omitempty"`
+	Source       string `json:"source"`
+	Claim        string `json:"claim,omitempty"`
+	SettingKey   string `json:"setting_key,omitempty"`
+	Required     bool   `json:"required,omitempty"`
+	Sensitive    bool   `json:"sensitive,omitempty"`
+	SignatureKey string `json:"signature_key,omitempty"`
+}
+
+type BindingSchema struct {
+	Inputs []BindingInputSchema `json:"inputs,omitempty"`
 }
 
 type TenantPolicy struct {

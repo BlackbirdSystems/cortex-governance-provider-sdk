@@ -33,6 +33,27 @@ func main() {
 			ProtocolVersion: dynamicprovider.ProtocolVersion,
 			DisplayName:     providerDisplayName,
 			Description:     providerDescription,
+			BindingSchema: &dynamicprovider.BindingSchema{
+				Inputs: []dynamicprovider.BindingInputSchema{
+					{
+						Name:         "example_api_key",
+						Source:       "jwt_claim",
+						Claim:        "example_api_key",
+						Required:     true,
+						Sensitive:    true,
+						SignatureKey: "example_api_sig",
+						Description:  "Example API key claim used to request a computed signature.",
+					},
+					{
+						Name:         "example_teams",
+						Source:       "jwt_claim",
+						Claim:        "example_teams",
+						Required:     false,
+						SignatureKey: "example_team_sig",
+						Description:  "Optional team scope claim that can be included in the binding.",
+					},
+				},
+			},
 		},
 		secret,
 		dynamicprovider.Callbacks{

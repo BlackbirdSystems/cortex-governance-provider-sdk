@@ -12,6 +12,7 @@ from fastapi import FastAPI, HTTPException, Request, Response
 from fastmcp import FastMCP
 
 from .models import (
+    BindingSchema,
     DYNAMIC_PROVIDER_KEY_HEADER,
     DYNAMIC_PROVIDER_SIGNATURE_HEADER,
     DYNAMIC_PROVIDER_TIMESTAMP_HEADER,
@@ -49,6 +50,7 @@ class DynamicProviderApp:
         compute_binding: Callable[[ComputeBindingInput], ComputeBindingOutput],
         fetch_download: Callable[[FetchDownloadInput], FetchDownloadOutput],
         action_to_tool: Callable[[str], str],
+        binding_schema: BindingSchema | None = None,
         is_available: Callable[[IsAvailableInput], bool] | None = None,
     ):
         self.provider_name = provider_name
@@ -61,6 +63,7 @@ class DynamicProviderApp:
         self.compute_binding = compute_binding
         self.fetch_download = fetch_download
         self.action_to_tool = action_to_tool
+        self.binding_schema = binding_schema
         self.is_available = is_available or (lambda _: True)
         self.current_request_context: contextvars.ContextVar[DynamicProviderContext] = contextvars.ContextVar(
             "current_request_context",
@@ -102,14 +105,17 @@ class DynamicProviderApp:
         def healthz() -> dict[str, str]:
             return {"status": "ok"}
 
-        @self.fastapi.get("/v1/provider/meta", response_model=dict[str, str])
-        def provider_meta() -> dict[str, str]:
-            return {
+        @self.fastapi.get("/v1/provider/meta", response_model=dict[str, Any])
+        def provider_meta() -> dict[str, Any]:
+            meta: dict[str, Any] = {
                 "name": self.provider_name,
                 "protocol_version": PROTOCOL_VERSION,
                 "display_name": self.display_name,
                 "description": self.description,
             }
+            if self.binding_schema is not None:
+                meta["binding_schema"] = self.binding_schema.model_dump(exclude_none=True)
+            return meta
 
         @self.fastapi.get("/v1/provider/tools", response_model=dict[str, list[dict[str, Any]]])
         async def provider_tools() -> dict[str, list[dict[str, Any]]]:

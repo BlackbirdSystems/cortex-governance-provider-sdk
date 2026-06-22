@@ -1,6 +1,8 @@
 from .app import DynamicProviderApp
 from .models import (
     PROTOCOL_VERSION,
+    BindingInputSchema,
+    BindingSchema,
     CapabilityGrant,
     ComputeBindingOutput,
     DelegatedDownload,
@@ -19,6 +21,8 @@ from .models import (
 __all__ = [
     "DynamicProviderApp",
     "PROTOCOL_VERSION",
+    "BindingInputSchema",
+    "BindingSchema",
     "CapabilityGrant",
     "ComputeBindingOutput",
     "DelegatedDownload",

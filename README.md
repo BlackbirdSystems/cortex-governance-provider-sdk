@@ -34,6 +34,7 @@ The Python library provides:
 - HMAC signing helpers
 - a reusable `DynamicProviderApp` for FastAPI + FastMCP
 - governed request-context bridging for tool execution
+- live binding schema metadata in provider meta responses
 
 ## Examples
 
@@ -43,3 +44,4 @@ Both examples are intentionally thin and only implement provider-specific behavi
 - delegated governed downloads
 - resource grant synthesis
 - multi-attribute binding envelopes
+- binding schema declaration for admin discovery

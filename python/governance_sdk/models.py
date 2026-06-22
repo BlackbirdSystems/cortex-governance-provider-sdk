@@ -16,6 +16,21 @@ class TenantPolicy(BaseModel):
     subject: str = ""
 
 
+class BindingInputSchema(BaseModel):
+    name: str
+    description: str = ""
+    source: str
+    claim: str = ""
+    setting_key: str = ""
+    required: bool = False
+    sensitive: bool = False
+    signature_key: str = ""
+
+
+class BindingSchema(BaseModel):
+    inputs: list[BindingInputSchema] = Field(default_factory=list)
+
+
 class DynamicProviderContext(BaseModel):
     authorization: str = ""
     policy: TenantPolicy | None = None

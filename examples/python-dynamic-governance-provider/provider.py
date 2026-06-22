@@ -11,6 +11,8 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from governance_sdk import (
+    BindingInputSchema,
+    BindingSchema,
     CapabilityGrant,
     ComputeBindingOutput,
     DynamicProviderApp,
@@ -148,6 +150,24 @@ provider = DynamicProviderApp(
     compute_binding=compute_binding,
     fetch_download=fetch_download,
     action_to_tool=lambda action: "example_python_get_echo_download_url" if action == "get_echo_download" else "example_python_echo",
+    binding_schema=BindingSchema(
+        inputs=[
+            BindingInputSchema(
+                name="example_python_workspace",
+                source="settings",
+                setting_key="example_python_workspace_id",
+                required=False,
+                signature_key="example_python_workspace_sig",
+                description="Optional workspace identifier to sign from tenant settings.",
+            ),
+            BindingInputSchema(
+                name="tenant_id",
+                source="tenant_id",
+                required=True,
+                description="Tenant identifier included in binding computation context.",
+            ),
+        ]
+    ),
 )
 
 
