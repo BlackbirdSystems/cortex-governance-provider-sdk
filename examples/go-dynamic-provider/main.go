@@ -38,13 +38,18 @@ func main() {
 			BindingSchema: &dynamicprovider.BindingSchema{
 				Inputs: []dynamicprovider.BindingInputSchema{
 					{
-						Name:         "example_api_key",
+						Name:         "example_api_enabled",
 						Source:       "settings",
-						SettingKey:   "example_api_key",
+						SettingKey:   "example_api_enabled",
 						Required:     true,
-						Sensitive:    true,
 						SignatureKey: "example_api_sig",
-						Description:  "Example API key from tenant settings used to request a computed signature.",
+						Description:  "Set to \"true\" to enable the example provider and generate a binding signature.",
+					},
+					{
+						Name:        "example_api_sig",
+						Source:      "computed",
+						Sensitive:   true,
+						Description: "Binding signature for example_api_enabled. Computed automatically on generate.",
 					},
 					{
 						Name:         "example_teams",
@@ -52,7 +57,13 @@ func main() {
 						SettingKey:   "example_teams",
 						Required:     false,
 						SignatureKey: "example_team_sig",
-						Description:  "Optional team scope from tenant settings that can be included in the binding.",
+						Description:  "Optional comma-separated team names to scope access.",
+					},
+					{
+						Name:        "example_team_sig",
+						Source:      "computed",
+						Sensitive:   true,
+						Description: "Team-scoped binding signature. Computed automatically from example_teams.",
 					},
 				},
 			},
