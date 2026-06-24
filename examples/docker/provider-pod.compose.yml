@@ -1,0 +1,21 @@
+services:
+  cortex-agent:
+    image: ghcr.io/blackbirdsystems/cortex-agent-cell:latest
+    environment:
+      GOVERNANCE_DYNAMIC_PROVIDERS_ENABLED: "true"
+      GOVERNANCE_PROVIDER_DIR: /var/run/cortex-governance/providers
+    volumes:
+      - governance-provider-sockets:/var/run/cortex-governance/providers
+
+  my-provider:
+    image: my-provider:latest
+    environment:
+      GOVERNANCE_DYNAMIC_PROVIDER_SECRET: ${GOVERNANCE_DYNAMIC_PROVIDER_SECRET}
+      SOCKETS_DIR: /var/run/cortex-governance/providers
+      GOVERNANCE_PROVIDER_SOCKET: /var/run/cortex-governance/providers/my-provider/provider.sock
+    volumes:
+      - governance-provider-sockets:/var/run/cortex-governance/providers
+
+volumes:
+  governance-provider-sockets:
+    external: true

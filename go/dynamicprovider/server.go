@@ -96,7 +96,7 @@ func (s *Server) wrapMapRequest(w http.ResponseWriter, r *http.Request) {
 	s.mustDecode(w, r, &input)
 	output, err := s.Callbacks.MapRequest(input)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		s.writeError(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
 	s.writeJSON(w, r, output)
@@ -107,7 +107,7 @@ func (s *Server) wrapResolveResource(w http.ResponseWriter, r *http.Request) {
 	s.mustDecode(w, r, &input)
 	output, err := s.Callbacks.ResolveResource(input)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		s.writeError(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
 	s.writeJSON(w, r, output)
@@ -118,7 +118,7 @@ func (s *Server) wrapMapScope(w http.ResponseWriter, r *http.Request) {
 	s.mustDecode(w, r, &input)
 	output, err := s.Callbacks.MapScope(input)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		s.writeError(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
 	s.writeJSON(w, r, output)
@@ -129,7 +129,7 @@ func (s *Server) wrapExecute(w http.ResponseWriter, r *http.Request) {
 	s.mustDecode(w, r, &input)
 	output, err := s.Callbacks.Execute(input)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		s.writeError(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
 	s.writeJSON(w, r, map[string]any{"result": output})
@@ -140,7 +140,7 @@ func (s *Server) wrapParseSettings(w http.ResponseWriter, r *http.Request) {
 	s.mustDecode(w, r, &input)
 	output, err := s.Callbacks.ParseSettings(input)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		s.writeError(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
 	s.writeJSON(w, r, output)
@@ -151,7 +151,7 @@ func (s *Server) wrapComputeBinding(w http.ResponseWriter, r *http.Request) {
 	s.mustDecode(w, r, &input)
 	output, err := s.Callbacks.ComputeBinding(input)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		s.writeError(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
 	s.writeJSON(w, r, output)
@@ -162,7 +162,7 @@ func (s *Server) wrapIsAvailable(w http.ResponseWriter, r *http.Request) {
 	s.mustDecode(w, r, &input)
 	ok, err := s.Callbacks.IsAvailable(input)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		s.writeError(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
 	s.writeJSON(w, r, map[string]bool{"ok": ok})
@@ -173,7 +173,7 @@ func (s *Server) wrapFetchDownload(w http.ResponseWriter, r *http.Request) {
 	s.mustDecode(w, r, &input)
 	output, err := s.Callbacks.FetchDownload(input)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		s.writeError(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
 	s.writeJSON(w, r, output)
@@ -181,9 +181,13 @@ func (s *Server) wrapFetchDownload(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) mustDecode(w http.ResponseWriter, r *http.Request, out interface{}) {
 	if err := json.NewDecoder(r.Body).Decode(out); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		s.writeError(w, r, http.StatusBadRequest, err.Error())
 		panic(http.ErrAbortHandler)
 	}
+}
+
+func (s *Server) writeError(w http.ResponseWriter, r *http.Request, status int, msg string) {
+	s.writeSigned(w, r, status, "text/plain; charset=utf-8", []byte(msg+"\n"))
 }
 
 func (s *Server) writeJSON(w http.ResponseWriter, r *http.Request, body interface{}) {
@@ -212,7 +216,7 @@ func (s *Server) withHMAC(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			s.writeError(w, r, http.StatusBadRequest, err.Error())
 			return
 		}
 		r.Body = io.NopCloser(bytes.NewReader(body))
@@ -221,11 +225,11 @@ func (s *Server) withHMAC(next http.Handler) http.Handler {
 			signature := strings.TrimSpace(r.Header.Get(DynamicProviderSignatureHeader))
 			key := strings.TrimSpace(r.Header.Get(DynamicProviderKeyHeader))
 			if key != s.Meta.Name || timestamp == "" || signature == "" {
-				http.Error(w, "missing HMAC headers", http.StatusUnauthorized)
+				s.writeError(w, r, http.StatusUnauthorized, "missing HMAC headers")
 				return
 			}
 			if !VerifyRequestSignature(r.Method, r.URL.Path, timestamp, body, signature, s.Secret) {
-				http.Error(w, "invalid HMAC signature", http.StatusUnauthorized)
+				s.writeError(w, r, http.StatusUnauthorized, "invalid HMAC signature")
 				return
 			}
 		}
