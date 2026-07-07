@@ -20,14 +20,16 @@ type Meta struct {
 }
 
 type BindingInputSchema struct {
-	Name         string `json:"name"`
-	Description  string `json:"description,omitempty"`
-	Source       string `json:"source"`
-	Claim        string `json:"claim,omitempty"`
-	SettingKey   string `json:"setting_key,omitempty"`
-	Required     bool   `json:"required,omitempty"`
-	Sensitive    bool   `json:"sensitive,omitempty"`
-	SignatureKey string `json:"signature_key,omitempty"`
+	Name               string `json:"name"`
+	Description        string `json:"description,omitempty"`
+	Source             string `json:"source"`
+	Claim              string `json:"claim,omitempty"`
+	SettingKey         string `json:"setting_key,omitempty"`
+	Required           bool   `json:"required,omitempty"`
+	Sensitive          bool   `json:"sensitive,omitempty"`
+	Hash               bool   `json:"hash,omitempty"`
+	EnvKey             string `json:"env_key,omitempty"`
+	SignatureKey       string `json:"signature_key,omitempty"`
 }
 
 type BindingSchema struct {

@@ -2,9 +2,12 @@ package dynamicprovider
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net"
 	"net/http"
 	"os"
@@ -138,6 +141,46 @@ func (s *Server) wrapExecute(w http.ResponseWriter, r *http.Request) {
 func (s *Server) wrapParseSettings(w http.ResponseWriter, r *http.Request) {
 	var input ParseSettingsInput
 	s.mustDecode(w, r, &input)
+
+	if s.Meta.BindingSchema != nil {
+		for _, schemaInput := range s.Meta.BindingSchema.Inputs {
+			if schemaInput.Hash && schemaInput.EnvKey != "" {
+				settingVal, ok := input.Settings[schemaInput.SettingKey]
+				if !ok {
+					key := schemaInput.SettingKey
+					if key == "" {
+						key = schemaInput.Name
+					}
+					settingVal, ok = input.Settings[key]
+				}
+
+				hashVal, _ := settingVal.(string)
+				hashVal = strings.TrimSpace(hashVal)
+				if hashVal == "" && schemaInput.Required {
+					s.writeError(w, r, http.StatusUnauthorized, fmt.Sprintf("missing required setting: %s", schemaInput.Name))
+					return
+				}
+
+				if hashVal != "" {
+					actualSecret := strings.TrimSpace(os.Getenv(schemaInput.EnvKey))
+					if actualSecret == "" {
+						s.writeError(w, r, http.StatusInternalServerError, fmt.Sprintf("provider error: environment variable %s is not set on the agent", schemaInput.EnvKey))
+						return
+					}
+
+					h := sha256.New()
+					h.Write([]byte(actualSecret))
+					computedHash := hex.EncodeToString(h.Sum(nil))
+
+					if !strings.EqualFold(computedHash, hashVal) {
+						s.writeError(w, r, http.StatusUnauthorized, fmt.Sprintf("unauthorized: provided hash for %s does not match the agent's hosted secret", schemaInput.Name))
+						return
+					}
+				}
+			}
+		}
+	}
+
 	output, err := s.Callbacks.ParseSettings(input)
 	if err != nil {
 		s.writeError(w, r, http.StatusBadRequest, err.Error())
@@ -187,6 +230,11 @@ func (s *Server) mustDecode(w http.ResponseWriter, r *http.Request, out interfac
 }
 
 func (s *Server) writeError(w http.ResponseWriter, r *http.Request, status int, msg string) {
+	slog.Error("governance provider error response",
+		slog.String("path", r.URL.Path),
+		slog.Int("status", status),
+		slog.String("error", msg),
+	)
 	s.writeSigned(w, r, status, "text/plain; charset=utf-8", []byte(msg+"\n"))
 }
 
