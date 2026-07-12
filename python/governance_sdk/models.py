@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -9,6 +9,13 @@ PROTOCOL_VERSION = "v1"
 DYNAMIC_PROVIDER_SIGNATURE_HEADER = "X-Cortex-Dynamic-Provider-Signature"
 DYNAMIC_PROVIDER_TIMESTAMP_HEADER = "X-Cortex-Dynamic-Provider-Timestamp"
 DYNAMIC_PROVIDER_KEY_HEADER = "X-Cortex-Dynamic-Provider-Key"
+
+# Accepted values for BindingInputSchema.type. "" is free text, no validation.
+# Mirrors cortex-governance/go/governance's BindingType* constants. Being a
+# Literal (rather than plain str) gives provider authors static type-checking
+# (mypy/pyright) against these values, plus Pydantic rejects anything else
+# at construction time.
+BindingType = Literal["", "bool", "number", "select", "multiselect"]
 
 
 class TenantPolicy(BaseModel):
@@ -24,7 +31,10 @@ class BindingInputSchema(BaseModel):
     setting_key: str = ""
     required: bool = False
     sensitive: bool = False
+    hash: bool = False
     signature_key: str = ""
+    type: BindingType = ""
+    options: list[str] = Field(default_factory=list)
 
 
 class BindingSchema(BaseModel):

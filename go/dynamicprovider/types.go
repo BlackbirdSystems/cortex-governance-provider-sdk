@@ -19,17 +19,36 @@ type Meta struct {
 	BindingSchema   *BindingSchema `json:"binding_schema,omitempty"`
 }
 
+// BindingType is a closed set of shapes a BindingInputSchema value can take.
+// Being a named type (rather than plain string) gives provider authors
+// compile-time autocompletion/type-checking against the BindingType*
+// constants instead of hand-typing string literals.
+type BindingType string
+
+// Accepted values for BindingInputSchema.Type. An empty/unset Type is
+// equivalent to BindingTypeString: free text, no validation. These mirror
+// cortex-governance/go/governance's BindingType* constants.
+const (
+	BindingTypeString      BindingType = ""
+	BindingTypeBool        BindingType = "bool"
+	BindingTypeNumber      BindingType = "number"
+	BindingTypeSelect      BindingType = "select"
+	BindingTypeMultiSelect BindingType = "multiselect"
+)
+
 type BindingInputSchema struct {
-	Name               string `json:"name"`
-	Description        string `json:"description,omitempty"`
-	Source             string `json:"source"`
-	Claim              string `json:"claim,omitempty"`
-	SettingKey         string `json:"setting_key,omitempty"`
-	Required           bool   `json:"required,omitempty"`
-	Sensitive          bool   `json:"sensitive,omitempty"`
-	Hash               bool   `json:"hash,omitempty"`
-	EnvKey             string `json:"env_key,omitempty"`
-	SignatureKey       string `json:"signature_key,omitempty"`
+	Name         string      `json:"name"`
+	Description  string      `json:"description,omitempty"`
+	Source       string      `json:"source"`
+	Claim        string      `json:"claim,omitempty"`
+	SettingKey   string      `json:"setting_key,omitempty"`
+	Required     bool        `json:"required,omitempty"`
+	Sensitive    bool        `json:"sensitive,omitempty"`
+	Hash         bool        `json:"hash,omitempty"`
+	EnvKey       string      `json:"env_key,omitempty"`
+	SignatureKey string      `json:"signature_key,omitempty"`
+	Type         BindingType `json:"type,omitempty"`
+	Options      []string    `json:"options,omitempty"`
 }
 
 type BindingSchema struct {
