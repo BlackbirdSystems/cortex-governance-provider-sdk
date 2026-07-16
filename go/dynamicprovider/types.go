@@ -143,6 +143,8 @@ type ParseSettingsOutput struct {
 }
 
 type ComputeBindingInput struct {
+	// Secret is deprecated and is now passed as an empty string. Binding signatures
+	// are computed automatically on the host, so providers do not need the secret.
 	Secret string                 `json:"secret"`
 	Params map[string]interface{} `json:"params,omitempty"`
 }
