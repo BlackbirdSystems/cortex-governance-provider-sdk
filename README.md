@@ -63,39 +63,22 @@ The agent reads `provider.json` for metadata and connects to `provider.sock` for
 
 ### Dockerfile
 
-Use a multi-stage build. Bake `provider.json` into the image and copy it into the socket directory at startup via an entrypoint script.
+Use `ghcr.io/blackbirdsystems/cortex-governance-provider-base:latest` as the base image for runtime. It includes CA certificates, default `SOCKETS_DIR`, and a generic entrypoint that automatically sets up the socket directory, copies `provider.json`, and resolves `GOVERNANCE_PROVIDER_SOCKET`.
 
 ```dockerfile
 FROM golang:1.25-alpine AS builder
 WORKDIR /build
 COPY go.mod go.sum ./
-COPY cortex-governance-provider-sdk/ cortex-governance-provider-sdk/
 RUN go mod download
 COPY *.go ./
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -o my-provider .
 
-FROM alpine:3
-RUN apk --no-cache add ca-certificates
+FROM ghcr.io/blackbirdsystems/cortex-governance-provider-base:latest
 COPY --from=builder /build/my-provider /usr/local/bin/my-provider
-COPY provider.json /etc/my-provider/provider.json
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
-
-ENV SOCKETS_DIR=/var/run/cortex-governance/providers
-ENV GOVERNANCE_PROVIDER_SOCKET=/var/run/cortex-governance/providers/my-provider/provider.sock
-
-ENTRYPOINT ["/entrypoint.sh"]
+COPY provider.json /etc/cortex-provider/provider.json
+CMD ["my-provider"]
 ```
 
-### entrypoint.sh
-
-```sh
-#!/bin/sh
-set -e
-mkdir -p "$SOCKETS_DIR/my-provider"
-cp /etc/my-provider/provider.json "$SOCKETS_DIR/my-provider/provider.json"
-exec my-provider "$@"
-```
 
 ### Docker Compose
 
@@ -123,6 +106,12 @@ services:
       GOVERNANCE_PROVIDER_SOCKET: /var/run/cortex-governance/providers/my-provider/provider.sock
     volumes:
       - governance-provider-sockets:/var/run/cortex-governance/providers
+    networks:
+      - cortex-agent-gateway
+
+networks:
+  cortex-agent-gateway:
+    external: true
 
 volumes:
   governance-provider-sockets:
