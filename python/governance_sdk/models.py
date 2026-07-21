@@ -136,6 +136,14 @@ class DelegatedDownload(BaseModel):
     expires_in_seconds: int = 0
     params: dict[str, Any] = Field(default_factory=dict)
     next_step: str = ""
+    # When True, the host materializes this download and stages it into the shared
+    # tenant file store, returning the file provider's governed URLs instead of a
+    # per-provider delegated-download ticket. Prefer this for generated content so
+    # it lands in the same store as every other provider's output.
+    stage_to_file_store: bool = False
+    # Optional relative destination within the tenant file store when
+    # stage_to_file_store is set. Leave empty to use a conventional .staging path.
+    path: str = ""
 
 
 class FetchDownloadInput(BaseModel):

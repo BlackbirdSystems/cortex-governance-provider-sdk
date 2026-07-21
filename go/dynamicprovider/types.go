@@ -130,6 +130,15 @@ type DelegatedDownload struct {
 	ExpiresInSeconds int                    `json:"expires_in_seconds,omitempty"`
 	Params           map[string]interface{} `json:"params,omitempty"`
 	NextStep         string                 `json:"next_step,omitempty"`
+	// StageToFileStore, when true, asks the host to materialize this download and
+	// stage it into the shared tenant file store, returning the file provider's
+	// governed URLs (provider_access_url/public_download_url) instead of a
+	// per-provider delegated-download ticket. Prefer this for generated content so
+	// it lands in the same store as every other provider's output.
+	StageToFileStore bool `json:"stage_to_file_store,omitempty"`
+	// Path is the optional relative destination within the tenant file store when
+	// StageToFileStore is set. Leave empty to use a conventional .staging path.
+	Path string `json:"path,omitempty"`
 }
 
 type ParseSettingsInput struct {
