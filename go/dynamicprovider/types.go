@@ -132,7 +132,7 @@ type DelegatedDownload struct {
 	NextStep         string                 `json:"next_step,omitempty"`
 	// StageToFileStore, when true, asks the host to materialize this download and
 	// stage it into the shared tenant file store, returning the file provider's
-	// governed URLs (provider_access_url/public_download_url) instead of a
+	// governed URLs (system_internal_provider_url/user_external_download_url) instead of a
 	// per-provider delegated-download ticket. Prefer this for generated content so
 	// it lands in the same store as every other provider's output.
 	StageToFileStore bool `json:"stage_to_file_store,omitempty"`
