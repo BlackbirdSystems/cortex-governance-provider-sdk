@@ -28,6 +28,7 @@ type Callbacks struct {
 	ComputeBinding  func(ComputeBindingInput) (ComputeBindingOutput, error)
 	IsAvailable     func(IsAvailableInput) (bool, error)
 	FetchDownload   func(FetchDownloadInput) (FetchDownloadOutput, error)
+	StreamDownload  func(FetchDownloadInput) (io.ReadCloser, int64, string, string, error)
 }
 
 type Server struct {
@@ -91,6 +92,7 @@ func (s *Server) routes() http.Handler {
 	mux.HandleFunc("/v1/provider/compute-binding", s.wrapComputeBinding)
 	mux.HandleFunc("/v1/provider/is-available", s.wrapIsAvailable)
 	mux.HandleFunc("/v1/provider/fetch-download", s.wrapFetchDownload)
+	mux.HandleFunc("/v1/provider/stream-download", s.wrapStreamDownload)
 	return mux
 }
 
@@ -214,6 +216,10 @@ func (s *Server) wrapIsAvailable(w http.ResponseWriter, r *http.Request) {
 func (s *Server) wrapFetchDownload(w http.ResponseWriter, r *http.Request) {
 	var input FetchDownloadInput
 	s.mustDecode(w, r, &input)
+	if s.Callbacks.FetchDownload == nil {
+		s.writeError(w, r, http.StatusNotFound, "fetch-download not implemented")
+		return
+	}
 	output, err := s.Callbacks.FetchDownload(input)
 	if err != nil {
 		s.writeError(w, r, http.StatusBadRequest, err.Error())

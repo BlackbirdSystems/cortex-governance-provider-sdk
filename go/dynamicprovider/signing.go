@@ -23,6 +23,10 @@ func SignRequest(method, path, timestamp string, body, secret []byte) string {
 
 func SignResponse(method, path, timestamp string, statusCode int, body, secret []byte) string {
 	digest := sha256.Sum256(body)
+	return SignResponseDigest(method, path, timestamp, statusCode, hex.EncodeToString(digest[:]), secret)
+}
+
+func SignResponseDigest(method, path, timestamp string, statusCode int, digestHex string, secret []byte) string {
 	payload := strings.Join([]string{
 		"cortex-dynamic-provider-response",
 		ProtocolVersion,
@@ -30,7 +34,7 @@ func SignResponse(method, path, timestamp string, statusCode int, body, secret [
 		strings.TrimSpace(path),
 		fmt.Sprintf("%d", statusCode),
 		strings.TrimSpace(timestamp),
-		hex.EncodeToString(digest[:]),
+		strings.ToLower(strings.TrimSpace(digestHex)),
 	}, "\n")
 	return computeHMAC(secret, payload)
 }
