@@ -2,6 +2,7 @@ package dynamicprovider
 
 import (
 	"bytes"
+	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -146,7 +147,7 @@ func (s *Server) wrapParseSettings(w http.ResponseWriter, r *http.Request) {
 
 	if s.Meta.BindingSchema != nil {
 		for _, schemaInput := range s.Meta.BindingSchema.Inputs {
-			if schemaInput.Hash && schemaInput.EnvKey != "" {
+			if (schemaInput.Hash || schemaInput.Secret) && schemaInput.EnvKey != "" {
 				settingVal, ok := input.Settings[schemaInput.SettingKey]
 				if !ok {
 					key := schemaInput.SettingKey
@@ -164,17 +165,35 @@ func (s *Server) wrapParseSettings(w http.ResponseWriter, r *http.Request) {
 				}
 
 				if hashVal != "" {
-					actualSecret := strings.TrimSpace(os.Getenv(schemaInput.EnvKey))
+					actualSecret := strings.TrimSpace(os.Getenv("PROVIDER_SECRETS"))
 					if actualSecret == "" {
-						s.writeError(w, r, http.StatusInternalServerError, fmt.Sprintf("provider error: environment variable %s is not set on the agent", schemaInput.EnvKey))
+						actualSecret = strings.TrimSpace(os.Getenv(schemaInput.EnvKey))
+					}
+					if actualSecret == "" {
+						s.writeError(w, r, http.StatusInternalServerError, fmt.Sprintf("provider error: environment variable PROVIDER_SECRETS (or %s) is not set on the agent", schemaInput.EnvKey))
 						return
 					}
 
-					h := sha256.New()
-					h.Write([]byte(actualSecret))
-					computedHash := hex.EncodeToString(h.Sum(nil))
+					matched := false
+					for _, part := range strings.FieldsFunc(actualSecret, func(r rune) bool { return r == ',' || r == '\n' }) {
+						key := strings.TrimSpace(part)
+						if key == "" {
+							continue
+						}
+						if hmac.Equal([]byte(key), []byte(hashVal)) {
+							matched = true
+							break
+						}
+						h := sha256.New()
+						h.Write([]byte(key))
+						computedHash := hex.EncodeToString(h.Sum(nil))
+						if strings.EqualFold(computedHash, hashVal) {
+							matched = true
+							break
+						}
+					}
 
-					if !strings.EqualFold(computedHash, hashVal) {
+					if !matched {
 						s.writeError(w, r, http.StatusUnauthorized, fmt.Sprintf("unauthorized: provided hash for %s does not match the agent's hosted secret", schemaInput.Name))
 						return
 					}

@@ -45,6 +45,7 @@ type BindingInputSchema struct {
 	Required     bool        `json:"required,omitempty"`
 	Sensitive    bool        `json:"sensitive,omitempty"`
 	Hash         bool        `json:"hash,omitempty"`
+	Secret       bool        `json:"secret,omitempty"`
 	EnvKey       string      `json:"env_key,omitempty"`
 	SignatureKey string      `json:"signature_key,omitempty"`
 	Type         BindingType `json:"type,omitempty"`
