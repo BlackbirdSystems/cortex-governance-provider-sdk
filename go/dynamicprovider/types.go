@@ -52,8 +52,44 @@ type BindingInputSchema struct {
 	Options      []string    `json:"options,omitempty"`
 }
 
+type ConfirmationMode string
+
+const (
+	ConfirmationModeAlways ConfirmationMode = "always"
+)
+
+type ApprovalLifecycle string
+
+const (
+	ApprovalLifecycleEveryTime ApprovalLifecycle = "every_time"
+	ApprovalLifecycleTask      ApprovalLifecycle = "task"
+	ApprovalLifecycleSession   ApprovalLifecycle = "session"
+)
+
+type ProviderActionConfirmation struct {
+	Mode ConfirmationMode `json:"mode"`
+}
+
+type ApprovalPreviewField struct {
+	Pointer  string `json:"pointer"`
+	Label    string `json:"label"`
+	Format   string `json:"format,omitempty"`
+	MaxChars int    `json:"max_chars,omitempty"`
+}
+
+type ProviderActionPolicy struct {
+	Action               string                     `json:"action"`
+	PermissionInput      string                     `json:"permission_input"`
+	Confirmation         ProviderActionConfirmation `json:"confirmation"`
+	Title                string                     `json:"title"`
+	PreviewFields        []ApprovalPreviewField     `json:"preview_fields,omitempty"`
+	MaxApprovalLifecycle ApprovalLifecycle          `json:"max_approval_lifecycle,omitempty"`
+	ApprovalScopeFields  []string                   `json:"approval_scope_fields,omitempty"`
+}
+
 type BindingSchema struct {
-	Inputs []BindingInputSchema `json:"inputs,omitempty"`
+	Inputs  []BindingInputSchema   `json:"inputs,omitempty"`
+	Actions []ProviderActionPolicy `json:"actions,omitempty"`
 }
 
 type TenantPolicy struct {
