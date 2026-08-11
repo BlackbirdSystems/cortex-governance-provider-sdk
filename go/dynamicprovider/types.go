@@ -29,27 +29,37 @@ type BindingType string
 // equivalent to BindingTypeString: free text, no validation. These mirror
 // cortex-governance/go/governance's BindingType* constants.
 const (
-	BindingTypeString      BindingType = ""
-	BindingTypeBool        BindingType = "bool"
-	BindingTypeNumber      BindingType = "number"
-	BindingTypeSelect      BindingType = "select"
+	BindingTypeString BindingType = ""
+	BindingTypeBool   BindingType = "bool"
+	BindingTypeNumber BindingType = "number"
+	BindingTypeSelect BindingType = "select"
+	// Deprecated: use BindingTypePicker with PickerConfig{Multiple: true} for
+	// provider-backed choices. Multiselect remains supported for static legacy
+	// schemas and persists a delimiter-separated string.
 	BindingTypeMultiSelect BindingType = "multiselect"
+	BindingTypePicker      BindingType = "picker"
 )
 
+type PickerConfig struct {
+	Multiple  bool     `json:"multiple,omitempty"`
+	DependsOn []string `json:"depends_on,omitempty"`
+}
+
 type BindingInputSchema struct {
-	Name         string      `json:"name"`
-	Description  string      `json:"description,omitempty"`
-	Source       string      `json:"source"`
-	Claim        string      `json:"claim,omitempty"`
-	SettingKey   string      `json:"setting_key,omitempty"`
-	Required     bool        `json:"required,omitempty"`
-	Sensitive    bool        `json:"sensitive,omitempty"`
-	Hash         bool        `json:"hash,omitempty"`
-	Secret       bool        `json:"secret,omitempty"`
-	EnvKey       string      `json:"env_key,omitempty"`
-	SignatureKey string      `json:"signature_key,omitempty"`
-	Type         BindingType `json:"type,omitempty"`
-	Options      []string    `json:"options,omitempty"`
+	Name         string        `json:"name"`
+	Description  string        `json:"description,omitempty"`
+	Source       string        `json:"source"`
+	Claim        string        `json:"claim,omitempty"`
+	SettingKey   string        `json:"setting_key,omitempty"`
+	Required     bool          `json:"required,omitempty"`
+	Sensitive    bool          `json:"sensitive,omitempty"`
+	Hash         bool          `json:"hash,omitempty"`
+	Secret       bool          `json:"secret,omitempty"`
+	EnvKey       string        `json:"env_key,omitempty"`
+	SignatureKey string        `json:"signature_key,omitempty"`
+	Type         BindingType   `json:"type,omitempty"`
+	Options      []string      `json:"options,omitempty"`
+	Picker       *PickerConfig `json:"picker,omitempty"`
 }
 
 type ConfirmationMode string
@@ -100,6 +110,39 @@ type TenantPolicy struct {
 type Context struct {
 	Authorization string        `json:"authorization,omitempty"`
 	Policy        *TenantPolicy `json:"policy,omitempty"`
+}
+type PickerOperation string
+
+const (
+	PickerOperationList     PickerOperation = "list"
+	PickerOperationValidate PickerOperation = "validate"
+)
+
+type PickerItem struct {
+	Value       string `json:"value"`
+	Label       string `json:"label"`
+	Description string `json:"description,omitempty"`
+	Data        any    `json:"data,omitempty"`
+}
+type PickerValidation struct {
+	Valid   bool   `json:"valid"`
+	Message string `json:"message,omitempty"`
+}
+type PickerInput struct {
+	Context        Context           `json:"context"`
+	Operation      PickerOperation   `json:"operation"`
+	InputName      string            `json:"input_name"`
+	TargetTenantID string            `json:"target_tenant_id,omitempty"`
+	Dependencies   map[string]string `json:"dependencies,omitempty"`
+	Query          string            `json:"query,omitempty"`
+	Cursor         string            `json:"cursor,omitempty"`
+	Limit          int               `json:"limit,omitempty"`
+	SelectedValues []string          `json:"selected_values,omitempty"`
+}
+type PickerOutput struct {
+	Items      []PickerItem      `json:"items,omitempty"`
+	NextCursor string            `json:"next_cursor,omitempty"`
+	Validation *PickerValidation `json:"validation,omitempty"`
 }
 
 type Request struct {

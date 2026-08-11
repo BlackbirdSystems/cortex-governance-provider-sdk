@@ -30,6 +30,7 @@ type Callbacks struct {
 	IsAvailable     func(IsAvailableInput) (bool, error)
 	FetchDownload   func(FetchDownloadInput) (FetchDownloadOutput, error)
 	StreamDownload  func(FetchDownloadInput) (io.ReadCloser, int64, string, string, error)
+	Picker          func(PickerInput) (PickerOutput, error)
 }
 
 type Server struct {
@@ -94,7 +95,27 @@ func (s *Server) routes() http.Handler {
 	mux.HandleFunc("/v1/provider/is-available", s.wrapIsAvailable)
 	mux.HandleFunc("/v1/provider/fetch-download", s.wrapFetchDownload)
 	mux.HandleFunc("/v1/provider/stream-download", s.wrapStreamDownload)
+	mux.HandleFunc("/v1/provider/picker", s.wrapPicker)
 	return mux
+}
+
+func (s *Server) wrapPicker(w http.ResponseWriter, r *http.Request) {
+	if s.Callbacks.Picker == nil {
+		slog.Warn("Dynamic provider picker unavailable", "provider", s.Meta.Name)
+		s.writeError(w, r, http.StatusNotFound, "picker not implemented")
+		return
+	}
+	var input PickerInput
+	s.mustDecode(w, r, &input)
+	slog.Debug("Dynamic provider picker request", "provider", s.Meta.Name, "operation", input.Operation, "input", input.InputName, "dependency_count", len(input.Dependencies), "selected_count", len(input.SelectedValues), "has_query", strings.TrimSpace(input.Query) != "", "has_cursor", strings.TrimSpace(input.Cursor) != "")
+	output, err := s.Callbacks.Picker(input)
+	if err != nil {
+		slog.Warn("Dynamic provider picker failed", "provider", s.Meta.Name, "operation", input.Operation, "input", input.InputName, "error", err)
+		s.writeError(w, r, http.StatusBadRequest, err.Error())
+		return
+	}
+	slog.Debug("Dynamic provider picker completed", "provider", s.Meta.Name, "operation", input.Operation, "input", input.InputName, "item_count", len(output.Items), "has_next_cursor", strings.TrimSpace(output.NextCursor) != "", "has_validation", output.Validation != nil)
+	s.writeJSON(w, r, output)
 }
 
 func (s *Server) wrapMapRequest(w http.ResponseWriter, r *http.Request) {

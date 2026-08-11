@@ -15,7 +15,9 @@ DYNAMIC_PROVIDER_KEY_HEADER = "X-Cortex-Dynamic-Provider-Key"
 # Literal (rather than plain str) gives provider authors static type-checking
 # (mypy/pyright) against these values, plus Pydantic rejects anything else
 # at construction time.
-BindingType = Literal["", "bool", "number", "select", "multiselect"]
+# ``multiselect`` is deprecated for new provider-backed choices. Use ``picker``
+# with ``PickerConfig(multiple=True)``; the legacy type remains wire-compatible.
+BindingType = Literal["", "bool", "number", "select", "multiselect", "picker"]
 
 
 class TenantPolicy(BaseModel):
@@ -35,6 +37,11 @@ class BindingInputSchema(BaseModel):
     signature_key: str = ""
     type: BindingType = ""
     options: list[str] = Field(default_factory=list)
+    picker: "PickerConfig | None" = None
+
+class PickerConfig(BaseModel):
+    multiple: bool = False
+    depends_on: list[str] = Field(default_factory=list)
 
 
 class BindingSchema(BaseModel):
@@ -44,6 +51,29 @@ class BindingSchema(BaseModel):
 class DynamicProviderContext(BaseModel):
     authorization: str = ""
     policy: TenantPolicy | None = None
+
+class PickerItem(BaseModel):
+    value: str
+    label: str
+    description: str = ""
+    data: Any = None
+class PickerValidation(BaseModel):
+    valid: bool
+    message: str = ""
+class PickerInput(BaseModel):
+    context: DynamicProviderContext = Field(default_factory=DynamicProviderContext)
+    operation: Literal["list", "validate"]
+    input_name: str
+    target_tenant_id: str = ""
+    dependencies: dict[str, str] = Field(default_factory=dict)
+    query: str = ""
+    cursor: str = ""
+    limit: int = 0
+    selected_values: list[str] = Field(default_factory=list)
+class PickerOutput(BaseModel):
+    items: list[PickerItem] = Field(default_factory=list)
+    next_cursor: str = ""
+    validation: PickerValidation | None = None
 
 
 class ProviderRequest(BaseModel):

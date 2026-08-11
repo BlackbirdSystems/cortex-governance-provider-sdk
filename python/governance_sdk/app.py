@@ -31,6 +31,8 @@ from .models import (
     PROTOCOL_VERSION,
     ParseSettingsInput,
     ParseSettingsOutput,
+    PickerInput,
+    PickerOutput,
     ResolveResourceInput,
     ResolveResourceOutput,
 )
@@ -52,6 +54,7 @@ class DynamicProviderApp:
         action_to_tool: Callable[[str], str],
         binding_schema: BindingSchema | None = None,
         is_available: Callable[[IsAvailableInput], bool] | None = None,
+        picker: Callable[[PickerInput], PickerOutput] | None = None,
     ):
         self.provider_name = provider_name
         self.display_name = display_name
@@ -65,6 +68,7 @@ class DynamicProviderApp:
         self.action_to_tool = action_to_tool
         self.binding_schema = binding_schema
         self.is_available = is_available or (lambda _: True)
+        self.picker = picker
         self.current_request_context: contextvars.ContextVar[DynamicProviderContext] = contextvars.ContextVar(
             "current_request_context",
             default=DynamicProviderContext(),
@@ -166,6 +170,12 @@ class DynamicProviderApp:
         @self.fastapi.post("/v1/provider/is-available", response_model=dict[str, bool])
         def provider_is_available(payload: IsAvailableInput) -> dict[str, bool]:
             return {"ok": self.is_available(payload)}
+
+        @self.fastapi.post("/v1/provider/picker", response_model=PickerOutput)
+        def provider_picker(payload: PickerInput) -> PickerOutput:
+            if self.picker is None:
+                raise HTTPException(status_code=404, detail="picker not implemented")
+            return self.picker(payload)
 
         @self.fastapi.post("/v1/provider/fetch-download", response_model=FetchDownloadOutput)
         def provider_fetch_download(payload: FetchDownloadInput) -> FetchDownloadOutput:
