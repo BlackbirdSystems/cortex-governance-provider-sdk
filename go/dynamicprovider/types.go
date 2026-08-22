@@ -12,11 +12,12 @@ const (
 )
 
 type Meta struct {
-	Name            string         `json:"name"`
-	ProtocolVersion string         `json:"protocol_version"`
-	DisplayName     string         `json:"display_name"`
-	Description     string         `json:"description"`
-	BindingSchema   *BindingSchema `json:"binding_schema,omitempty"`
+	Name             string         `json:"name"`
+	ProtocolVersion  string         `json:"protocol_version"`
+	DisplayName      string         `json:"display_name"`
+	Description      string         `json:"description"`
+	BindingSchema    *BindingSchema `json:"binding_schema,omitempty"`
+	ExecuteTimeoutMS int            `json:"execute_timeout_ms,omitempty"`
 }
 
 // BindingType is a closed set of shapes a BindingInputSchema value can take.
@@ -146,10 +147,18 @@ type PickerOutput struct {
 }
 
 type Request struct {
-	Provider   string                 `json:"provider"`
-	Action     string                 `json:"action"`
-	ResourceID string                 `json:"resource_id"`
-	Params     map[string]interface{} `json:"params,omitempty"`
+	Provider       string                 `json:"provider"`
+	Action         string                 `json:"action"`
+	ResourceID     string                 `json:"resource_id"`
+	Params         map[string]interface{} `json:"params,omitempty"`
+	GovernedInputs []GovernedInput        `json:"governed_inputs,omitempty"`
+}
+
+// GovernedInput carries an already host-validated internal provider URL.
+// It is additive to protocol-v1 requests.
+type GovernedInput struct {
+	Name string `json:"name"`
+	URL  string `json:"url"`
 }
 
 type ProtectedResource struct {
