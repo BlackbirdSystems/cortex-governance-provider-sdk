@@ -13,6 +13,7 @@ from fastmcp import FastMCP
 
 from .models import (
     BindingSchema,
+    ProviderCapability,
     DYNAMIC_PROVIDER_KEY_HEADER,
     DYNAMIC_PROVIDER_SIGNATURE_HEADER,
     DYNAMIC_PROVIDER_TIMESTAMP_HEADER,
@@ -55,6 +56,7 @@ class DynamicProviderApp:
         binding_schema: BindingSchema | None = None,
         is_available: Callable[[IsAvailableInput], bool] | None = None,
         picker: Callable[[PickerInput], PickerOutput] | None = None,
+        capabilities: list[ProviderCapability] | None = None,
     ):
         self.provider_name = provider_name
         self.display_name = display_name
@@ -69,6 +71,7 @@ class DynamicProviderApp:
         self.binding_schema = binding_schema
         self.is_available = is_available or (lambda _: True)
         self.picker = picker
+        self.capabilities = capabilities
         self.current_request_context: contextvars.ContextVar[DynamicProviderContext] = contextvars.ContextVar(
             "current_request_context",
             default=DynamicProviderContext(),
@@ -119,6 +122,8 @@ class DynamicProviderApp:
             }
             if self.binding_schema is not None:
                 meta["binding_schema"] = self.binding_schema.model_dump(exclude_none=True)
+            if self.capabilities is not None:
+                meta["capabilities"] = [c.model_dump(exclude_none=True) for c in self.capabilities]
             return meta
 
         @self.fastapi.get("/v1/provider/tools", response_model=dict[str, list[dict[str, Any]]])

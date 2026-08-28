@@ -11,13 +11,21 @@ const (
 	DynamicProviderKeyHeader       = "X-Cortex-Dynamic-Provider-Key"
 )
 
+type ProviderCapability struct {
+	Name        string   `json:"name"`
+	DisplayName string   `json:"display_name,omitempty"`
+	Description string   `json:"description,omitempty"`
+	Tools       []string `json:"tools"`
+}
+
 type Meta struct {
-	Name             string         `json:"name"`
-	ProtocolVersion  string         `json:"protocol_version"`
-	DisplayName      string         `json:"display_name"`
-	Description      string         `json:"description"`
-	BindingSchema    *BindingSchema `json:"binding_schema,omitempty"`
-	ExecuteTimeoutMS int            `json:"execute_timeout_ms,omitempty"`
+	Name             string               `json:"name"`
+	ProtocolVersion  string               `json:"protocol_version"`
+	DisplayName      string               `json:"display_name"`
+	Description      string               `json:"description"`
+	BindingSchema    *BindingSchema       `json:"binding_schema,omitempty"`
+	ExecuteTimeoutMS int                  `json:"execute_timeout_ms,omitempty"`
+	Capabilities     []ProviderCapability `json:"capabilities,omitempty"`
 }
 
 // BindingType is a closed set of shapes a BindingInputSchema value can take.

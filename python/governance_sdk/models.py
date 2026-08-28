@@ -44,6 +44,13 @@ class PickerConfig(BaseModel):
     depends_on: list[str] = Field(default_factory=list)
 
 
+class ProviderCapability(BaseModel):
+    name: str
+    display_name: str = ""
+    description: str = ""
+    tools: list[str] = Field(default_factory=list)
+
+
 class BindingSchema(BaseModel):
     inputs: list[BindingInputSchema] = Field(default_factory=list)
 
