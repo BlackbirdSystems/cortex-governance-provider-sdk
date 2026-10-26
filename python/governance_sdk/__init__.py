@@ -8,14 +8,17 @@ from .models import (
     DelegatedDownload,
     DynamicProviderContext,
     FetchDownloadOutput,
+    OAuthNotConnectedError,
     MapRequestInput,
     MapRequestOutput,
     MapScopeOutput,
     ParseSettingsOutput,
     ProtectedResource,
+    ProviderOAuthConfig,
     ProviderRequest,
     ResolveResourceOutput,
     TenantPolicy,
+    oauth_secret_input,
 )
 
 __all__ = [
@@ -28,12 +31,15 @@ __all__ = [
     "DelegatedDownload",
     "DynamicProviderContext",
     "FetchDownloadOutput",
+    "OAuthNotConnectedError",
     "MapRequestInput",
     "MapRequestOutput",
     "MapScopeOutput",
     "ParseSettingsOutput",
     "ProtectedResource",
+    "ProviderOAuthConfig",
     "ProviderRequest",
     "ResolveResourceOutput",
     "TenantPolicy",
+    "oauth_secret_input",
 ]

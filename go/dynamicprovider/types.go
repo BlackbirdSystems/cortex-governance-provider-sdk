@@ -47,6 +47,7 @@ const (
 	// schemas and persists a delimiter-separated string.
 	BindingTypeMultiSelect BindingType = "multiselect"
 	BindingTypePicker      BindingType = "picker"
+	BindingTypeSecret      BindingType = "secret"
 )
 
 type PickerConfig struct {
@@ -69,6 +70,14 @@ type BindingInputSchema struct {
 	Type         BindingType   `json:"type,omitempty"`
 	Options      []string      `json:"options,omitempty"`
 	Picker       *PickerConfig `json:"picker,omitempty"`
+	// Label is the optional human-readable name configuration UIs show.
+	Label string `json:"label,omitempty"`
+	// OAuth makes this secret's value the tenant's OAuth access token instead of
+	// a pasted setting. Source must be InputSourceOAuth and Type BindingTypeSecret;
+	// build one with OAuthSecretInput. The host connects and refreshes the token
+	// and delivers it in Context.Secrets under this input's Name (see
+	// Context.AccessToken).
+	OAuth *ProviderOAuthConfig `json:"oauth,omitempty"`
 }
 
 type ConfirmationMode string
@@ -119,6 +128,9 @@ type TenantPolicy struct {
 type Context struct {
 	Authorization string        `json:"authorization,omitempty"`
 	Policy        *TenantPolicy `json:"policy,omitempty"`
+	// Secrets holds the decrypted sensitive inputs for this call, keyed by input
+	// name, including the current access token of any OAuth-backed secret.
+	Secrets map[string]string `json:"secrets,omitempty"`
 }
 type PickerOperation string
 

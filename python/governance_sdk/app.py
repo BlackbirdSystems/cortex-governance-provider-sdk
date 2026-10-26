@@ -195,6 +195,12 @@ class DynamicProviderApp:
     def context(self) -> DynamicProviderContext:
         return self.current_request_context.get()
 
+    def access_token(self, input_name: str) -> str:
+        """The current call's OAuth access token for an OAuth-backed secret
+        (see oauth_secret_input). Raises OAuthNotConnectedError when the tenant
+        has not connected it."""
+        return self.context().access_token(input_name)
+
     def verify_dynamic_provider_request(self, request: Request, body: bytes) -> None:
         if request.url.path == "/healthz":
             return
