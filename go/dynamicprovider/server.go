@@ -39,7 +39,13 @@ type Server struct {
 	Callbacks Callbacks
 }
 
+// NewServer builds the provider server. It panics if the binding schema
+// declares a malformed OAuth-backed secret: that is a programming error the
+// host would otherwise reject later, when it refuses to load the provider.
 func NewServer(meta Meta, secret []byte, callbacks Callbacks) *Server {
+	if err := meta.BindingSchema.ValidateOAuth(); err != nil {
+		panic(fmt.Sprintf("dynamicprovider: invalid binding schema for provider %q: %v", meta.Name, err))
+	}
 	if meta.ProtocolVersion == "" {
 		meta.ProtocolVersion = ProtocolVersion
 	}

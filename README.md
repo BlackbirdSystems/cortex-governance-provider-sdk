@@ -46,6 +46,76 @@ Both examples are intentionally thin and only implement provider-specific behavi
 - multi-attribute binding envelopes
 - binding schema declaration for admin discovery
 
+## OAuth-backed secrets
+
+A provider that talks to an OAuth 2.0 API does not have to ask admins to paste an
+access token, or store and refresh one itself. It declares an OAuth-backed
+secret: a `secret` input whose `source` is `oauth` and that references its OAuth
+client. The host then runs the authorization flow when an admin connects the
+tenant, stores the tokens, refreshes them (including in the background), and
+delivers the current access token with every call in `context.secrets`, under the
+input's name.
+
+The tenant's own OAuth client id and secret are ordinary inputs of the provider,
+so each tenant uses its own OAuth app. The `oauth` block points at them by name.
+
+Go:
+
+```go
+schema := &dynamicprovider.BindingSchema{Inputs: []dynamicprovider.BindingInputSchema{
+	{Name: "client_id", Source: "settings", Label: "Client ID", Required: true},
+	{Name: "client_secret", Source: "settings", Type: dynamicprovider.BindingTypeSecret},
+	dynamicprovider.OAuthSecretInput("access_token", "QuickBooks", "Connect your company", dynamicprovider.ProviderOAuthConfig{
+		AuthorizationEndpoint: "https://appcenter.intuit.com/connect/oauth2",
+		TokenEndpoint:         "https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer",
+		Scopes:                "com.intuit.quickbooks.accounting",
+		ClientIDInput:         "client_id",
+		ClientSecretInput:     "client_secret",
+	}),
+}}
+
+// In Execute:
+token, err := input.Context.AccessToken("access_token") // ErrOAuthNotConnected if none
+```
+
+Python:
+
+```python
+from governance_sdk import BindingInputSchema, BindingSchema, ProviderOAuthConfig, oauth_secret_input
+
+schema = BindingSchema(inputs=[
+    BindingInputSchema(name="client_id", source="settings", label="Client ID", required=True),
+    BindingInputSchema(name="client_secret", source="settings", type="secret"),
+    oauth_secret_input(
+        "access_token",
+        ProviderOAuthConfig(
+            authorization_endpoint="https://appcenter.intuit.com/connect/oauth2",
+            token_endpoint="https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer",
+            scopes="com.intuit.quickbooks.accounting",
+            client_id_input="client_id",
+            client_secret_input="client_secret",
+        ),
+        label="QuickBooks",
+    ),
+])
+
+# Inside a tool:
+token = app.access_token("access_token")  # raises OAuthNotConnectedError if none
+```
+
+Notes:
+
+- The declaration is validated with the host's rules when the schema is built
+  (`NewServer` panics, the Python `BindingSchema` raises), so a mistake shows up
+  at start-up or in your tests, not when the host refuses to load the provider.
+- Optional `AuthorizationParams` / `authorization_params` add consent URL
+  parameters some providers need before they issue a refresh token (for example
+  `access_type=offline`); protocol parameters cannot be overridden.
+- Rotating the tenant's client secret takes effect when the tenant reconnects.
+- Other sensitive inputs are delivered in the same `context.secrets`, decrypted.
+- Requires a host with OAuth-backed secret support (cortex-governance-kernel
+  with the `oauth_connections` store).
+
 ## Docker Deployment
 
 Production providers ship as Docker images and share a single named volume with the agent so that both can access the Unix domain socket.
