@@ -131,6 +131,9 @@ type Context struct {
 	// Secrets holds the decrypted sensitive inputs for this call, keyed by input
 	// name, including the current access token of any OAuth-backed secret.
 	Secrets map[string]string `json:"secrets,omitempty"`
+	// OAuthParams holds, per OAuth-backed input name, the non-secret values the
+	// upstream returned when the tenant connected (QuickBooks' realmId).
+	OAuthParams map[string]map[string]string `json:"oauth_params,omitempty"`
 }
 type PickerOperation string
 

@@ -59,6 +59,12 @@ func (c Context) AccessToken(inputName string) (string, error) {
 	return "", fmt.Errorf("%w: %s", ErrOAuthNotConnected, inputName)
 }
 
+// OAuthParam returns a value the upstream returned when the tenant connected the
+// named OAuth-backed secret (for example "realmId"), or "" when there is none.
+func (c Context) OAuthParam(inputName, key string) string {
+	return strings.TrimSpace(c.OAuthParams[inputName][key])
+}
+
 func (i BindingInputSchema) isSensitive() bool {
 	return i.Sensitive || i.Secret || i.Hash || i.Type == BindingTypeSecret
 }

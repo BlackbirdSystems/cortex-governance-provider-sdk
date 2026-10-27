@@ -201,6 +201,11 @@ class DynamicProviderApp:
         has not connected it."""
         return self.context().access_token(input_name)
 
+    def oauth_param(self, input_name: str, key: str) -> str:
+        """A value the upstream returned when the tenant connected an OAuth-backed
+        secret (for example "realmId"), or "" when there is none."""
+        return self.context().oauth_param(input_name, key)
+
     def verify_dynamic_provider_request(self, request: Request, body: bytes) -> None:
         if request.url.path == "/healthz":
             return

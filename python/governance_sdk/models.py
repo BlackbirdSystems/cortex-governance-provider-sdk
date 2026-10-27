@@ -162,6 +162,12 @@ class DynamicProviderContext(BaseModel):
     # Decrypted sensitive inputs for this call, keyed by input name, including
     # the current access token of any OAuth-backed secret.
     secrets: dict[str, str] = Field(default_factory=dict)
+    oauth_params: dict[str, dict[str, str]] = Field(default_factory=dict)
+
+    def oauth_param(self, input_name: str, key: str) -> str:
+        """A value the upstream returned when the tenant connected the named
+        OAuth-backed secret (for example "realmId"), or "" when there is none."""
+        return self.oauth_params.get(input_name, {}).get(key, "").strip()
 
     def access_token(self, input_name: str) -> str:
         """The OAuth access token the host delivered for the named OAuth-backed

@@ -107,3 +107,16 @@ func TestNewServerAcceptsAValidOAuthDeclaration(t *testing.T) {
 		t.Fatal("NewServer returned nil")
 	}
 }
+
+func TestContextOAuthParam(t *testing.T) {
+	ctx := Context{OAuthParams: map[string]map[string]string{"access_token": {"realmId": " 9341 "}}}
+	if got := ctx.OAuthParam("access_token", "realmId"); got != "9341" {
+		t.Fatalf("OAuthParam = %q, want 9341", got)
+	}
+	if got := ctx.OAuthParam("access_token", "other"); got != "" {
+		t.Fatalf("missing param = %q, want empty", got)
+	}
+	if got := (Context{}).OAuthParam("access_token", "realmId"); got != "" {
+		t.Fatalf("empty context = %q, want empty", got)
+	}
+}

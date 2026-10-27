@@ -129,3 +129,10 @@ def test_a_tool_reads_the_token_through_the_app_during_an_execute_call():
     # With no secret delivered the same call is a clear not-connected error.
     with pytest.raises(Exception, match="not connected"):
         asyncio.run(app.call_fastmcp_tool("whoami", {}))
+
+
+def test_oauth_param_reads_the_delivered_callback_value():
+    ctx = DynamicProviderContext.model_validate({"oauth_params": {"access_token": {"realmId": " 9341 "}}})
+    assert ctx.oauth_param("access_token", "realmId") == "9341"
+    assert ctx.oauth_param("access_token", "other") == ""
+    assert DynamicProviderContext().oauth_param("access_token", "realmId") == ""
