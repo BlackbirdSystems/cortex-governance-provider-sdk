@@ -1,6 +1,9 @@
 from .app import DynamicProviderApp
 from .models import (
     PROTOCOL_VERSION,
+    ApprovalPreviewInput,
+    ApprovalPreviewOutput,
+    ApprovalPreviewRow,
     BindingInputSchema,
     BindingSchema,
     CapabilityGrant,
@@ -24,6 +27,9 @@ from .models import (
 __all__ = [
     "DynamicProviderApp",
     "PROTOCOL_VERSION",
+    "ApprovalPreviewInput",
+    "ApprovalPreviewOutput",
+    "ApprovalPreviewRow",
     "BindingInputSchema",
     "BindingSchema",
     "CapabilityGrant",

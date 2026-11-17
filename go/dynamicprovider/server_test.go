@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -129,4 +130,55 @@ func TestWrapParseSettings_ProviderSecrets(t *testing.T) {
 	if rr.Code != http.StatusUnauthorized {
 		t.Fatalf("expected status 401 for invalid secret, got %d: %s", rr.Code, rr.Body.String())
 	}
+}
+
+func TestWrapApprovalPreview(t *testing.T) {
+	post := func(server *Server, input ApprovalPreviewInput) *httptest.ResponseRecorder {
+		body, _ := json.Marshal(input)
+		req := httptest.NewRequest(http.MethodPost, "/v1/provider/approval-preview", bytes.NewReader(body))
+		rr := httptest.NewRecorder()
+		server.wrapApprovalPreview(rr, req)
+		return rr
+	}
+	input := ApprovalPreviewInput{
+		Request: &Request{Provider: "sample", Action: "send", Params: map[string]interface{}{"message_id": "m1"}},
+	}
+
+	t.Run("rows round-trip", func(t *testing.T) {
+		server := NewServer(Meta{Name: "sample"}, []byte("s"), Callbacks{
+			ApprovalPreview: func(in ApprovalPreviewInput) (ApprovalPreviewOutput, error) {
+				if in.Request == nil || in.Request.Params["message_id"] != "m1" {
+					t.Fatalf("request not delivered: %+v", in.Request)
+				}
+				return ApprovalPreviewOutput{Rows: []ApprovalPreviewRow{{Label: "Replying to Ann", Value: "hi", Replaces: "/params/message_id"}}}, nil
+			},
+		})
+		rr := post(server, input)
+		if rr.Code != http.StatusOK {
+			t.Fatalf("status %d: %s", rr.Code, rr.Body.String())
+		}
+		var out ApprovalPreviewOutput
+		if err := json.Unmarshal(rr.Body.Bytes(), &out); err != nil {
+			t.Fatal(err)
+		}
+		if len(out.Rows) != 1 || out.Rows[0].Replaces != "/params/message_id" {
+			t.Fatalf("unexpected rows: %+v", out.Rows)
+		}
+	})
+	t.Run("no callback answers 404 so the host knows there is nothing to add", func(t *testing.T) {
+		server := NewServer(Meta{Name: "sample"}, []byte("s"), Callbacks{})
+		if rr := post(server, input); rr.Code != http.StatusNotFound {
+			t.Fatalf("status %d, want 404", rr.Code)
+		}
+	})
+	t.Run("a callback error is a failure, not an empty result", func(t *testing.T) {
+		server := NewServer(Meta{Name: "sample"}, []byte("s"), Callbacks{
+			ApprovalPreview: func(ApprovalPreviewInput) (ApprovalPreviewOutput, error) {
+				return ApprovalPreviewOutput{}, errors.New("upstream 403")
+			},
+		})
+		if rr := post(server, input); rr.Code != http.StatusBadRequest {
+			t.Fatalf("status %d, want 400", rr.Code)
+		}
+	})
 }

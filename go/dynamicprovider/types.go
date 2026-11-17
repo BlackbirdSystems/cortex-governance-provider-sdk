@@ -222,6 +222,32 @@ type ResolveResourceOutput struct {
 	Resource *ProtectedResource `json:"resource"`
 }
 
+// ApprovalPreviewInput asks a provider for extra rows to show on the approval
+// card for Request, at the moment the approval is created. It is optional: a
+// provider that sets no ApprovalPreview callback contributes nothing, and the
+// host shows only the preview the provider's binding schema declares.
+type ApprovalPreviewInput struct {
+	Context  Context            `json:"context"`
+	Request  *Request           `json:"request"`
+	Resource *ProtectedResource `json:"resource,omitempty"`
+}
+
+// ApprovalPreviewRow is one display-only row on the approval card. It is never
+// part of what is approved. Replaces names the Pointer of a declared preview
+// field this row stands in for (for example "/params/message_id", so a bare ID
+// gives way to the message text it refers to); when empty the row is appended.
+// Return no rows when the context cannot be resolved: the declared row stays.
+type ApprovalPreviewRow struct {
+	Label    string `json:"label"`
+	Value    string `json:"value"`
+	Format   string `json:"format,omitempty"`
+	Replaces string `json:"replaces,omitempty"`
+}
+
+type ApprovalPreviewOutput struct {
+	Rows []ApprovalPreviewRow `json:"rows"`
+}
+
 type MapScopeInput struct {
 	Action string `json:"action"`
 }

@@ -46,6 +46,53 @@ Both examples are intentionally thin and only implement provider-specific behavi
 - multi-attribute binding envelopes
 - binding schema declaration for admin discovery
 
+## Approval card context
+
+When one of a provider's actions needs the user's approval, the card shows the
+preview fields the binding schema declares: each one points at a value in the
+call's params. That can only show what the call already carries, so a reply
+shows a bare message ID. A provider can add context the call does not carry by
+implementing the optional approval preview hook. The host calls it once, as the
+approval is created, and shows the rows it returns.
+
+A row can replace a declared row, so a bare ID gives way to the thing it refers
+to. Set `replaces` to the declared field's pointer:
+
+Go:
+
+```go
+Callbacks{
+	ApprovalPreview: func(in dynamicprovider.ApprovalPreviewInput) (dynamicprovider.ApprovalPreviewOutput, error) {
+		original, err := fetchMessage(in.Context, in.Request.Params["message_id"])
+		if err != nil {
+			return dynamicprovider.ApprovalPreviewOutput{}, err // logged by the host; card shows the ID
+		}
+		return dynamicprovider.ApprovalPreviewOutput{Rows: []dynamicprovider.ApprovalPreviewRow{
+			{Label: "Replying to " + original.Sender, Value: original.Text, Replaces: "/params/message_id"},
+		}}, nil
+	},
+}
+```
+
+Python: pass `approval_preview=` to `DynamicProviderApp`; inside it `app.context()` and
+`app.access_token(...)` work as they do in a tool.
+
+Rules:
+
+- **Optional.** A provider with no hook is unchanged: the endpoint
+  (`/v1/provider/approval-preview`) answers 404 and the host shows the declared
+  preview.
+- **Read-only, and quick.** The host waits a few seconds, then shows the card
+  without your rows. An error or timeout is logged and never blocks the approval.
+- **Read it from the upstream, not from the model.** The user is approving based
+  on what they see, so the text should be what the system of record holds, not
+  text the model supplied.
+- **Display only.** Rows are never part of what is approved, so they cannot change
+  the request. The host trims and truncates them (labels 80 characters, values
+  1000, at most 6 rows).
+- Return no rows when there is nothing to show (the item was deleted, say). The
+  declared row stays.
+
 ## OAuth-backed secrets
 
 A provider that talks to an OAuth 2.0 API does not have to ask admins to paste an

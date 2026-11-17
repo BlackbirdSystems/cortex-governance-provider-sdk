@@ -233,6 +233,31 @@ class MapRequestOutput(BaseModel):
     request: ProviderRequest
 
 
+class ApprovalPreviewRow(BaseModel):
+    """One display-only row on the approval card; never part of what is approved.
+
+    ``replaces`` names the pointer of a declared preview field this row stands
+    in for (for example ``/params/message_id``, so a bare ID gives way to the
+    message text it refers to). When empty the row is appended. Return no rows
+    when the context cannot be resolved: the declared row then stays.
+    """
+
+    label: str
+    value: str
+    format: str = ""
+    replaces: str = ""
+
+
+class ApprovalPreviewInput(BaseModel):
+    context: DynamicProviderContext = Field(default_factory=DynamicProviderContext)
+    request: ProviderRequest
+    resource: ProtectedResource | None = None
+
+
+class ApprovalPreviewOutput(BaseModel):
+    rows: list[ApprovalPreviewRow] = Field(default_factory=list)
+
+
 class ResolveResourceInput(BaseModel):
     context: DynamicProviderContext = Field(default_factory=DynamicProviderContext)
     request: ProviderRequest

@@ -17,6 +17,8 @@ from .models import (
     DYNAMIC_PROVIDER_KEY_HEADER,
     DYNAMIC_PROVIDER_SIGNATURE_HEADER,
     DYNAMIC_PROVIDER_TIMESTAMP_HEADER,
+    ApprovalPreviewInput,
+    ApprovalPreviewOutput,
     ComputeBindingInput,
     ComputeBindingOutput,
     DynamicProviderContext,
@@ -57,6 +59,7 @@ class DynamicProviderApp:
         is_available: Callable[[IsAvailableInput], bool] | None = None,
         picker: Callable[[PickerInput], PickerOutput] | None = None,
         capabilities: list[ProviderCapability] | None = None,
+        approval_preview: Callable[[ApprovalPreviewInput], ApprovalPreviewOutput] | None = None,
     ):
         self.provider_name = provider_name
         self.display_name = display_name
@@ -71,6 +74,11 @@ class DynamicProviderApp:
         self.binding_schema = binding_schema
         self.is_available = is_available or (lambda _: True)
         self.picker = picker
+        # Optional: extra rows for the approval card, built as an approval is
+        # created. Read-only and quick; the host waits a few seconds, then shows
+        # the card without it. Inside it, context()/access_token() work as in a
+        # tool call.
+        self.approval_preview = approval_preview
         self.capabilities = capabilities
         self.current_request_context: contextvars.ContextVar[DynamicProviderContext] = contextvars.ContextVar(
             "current_request_context",
@@ -181,6 +189,17 @@ class DynamicProviderApp:
             if self.picker is None:
                 raise HTTPException(status_code=404, detail="picker not implemented")
             return self.picker(payload)
+
+        @self.fastapi.post("/v1/provider/approval-preview", response_model=ApprovalPreviewOutput)
+        def provider_approval_preview(payload: ApprovalPreviewInput) -> ApprovalPreviewOutput:
+            if self.approval_preview is None:
+                # 404 is how the host tells "this provider adds nothing" from a failure.
+                raise HTTPException(status_code=404, detail="approval preview not implemented")
+            token = self.current_request_context.set(payload.context)
+            try:
+                return self.approval_preview(payload)
+            finally:
+                self.current_request_context.reset(token)
 
         @self.fastapi.post("/v1/provider/fetch-download", response_model=FetchDownloadOutput)
         def provider_fetch_download(payload: FetchDownloadInput) -> FetchDownloadOutput:

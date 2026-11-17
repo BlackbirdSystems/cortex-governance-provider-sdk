@@ -31,6 +31,10 @@ type Callbacks struct {
 	FetchDownload   func(FetchDownloadInput) (FetchDownloadOutput, error)
 	StreamDownload  func(FetchDownloadInput) (io.ReadCloser, int64, string, string, error)
 	Picker          func(PickerInput) (PickerOutput, error)
+	// ApprovalPreview is optional. When set, the host calls it as an approval is
+	// created and shows the returned rows on the card. It must be read-only and
+	// quick (the host waits a few seconds, then shows the card without it).
+	ApprovalPreview func(ApprovalPreviewInput) (ApprovalPreviewOutput, error)
 }
 
 type Server struct {
@@ -102,7 +106,30 @@ func (s *Server) routes() http.Handler {
 	mux.HandleFunc("/v1/provider/fetch-download", s.wrapFetchDownload)
 	mux.HandleFunc("/v1/provider/stream-download", s.wrapStreamDownload)
 	mux.HandleFunc("/v1/provider/picker", s.wrapPicker)
+	mux.HandleFunc("/v1/provider/approval-preview", s.wrapApprovalPreview)
 	return mux
+}
+
+func (s *Server) wrapApprovalPreview(w http.ResponseWriter, r *http.Request) {
+	if s.Callbacks.ApprovalPreview == nil {
+		// 404 is how the host tells "this provider adds nothing" from a failure.
+		s.writeError(w, r, http.StatusNotFound, "approval preview not implemented")
+		return
+	}
+	var input ApprovalPreviewInput
+	s.mustDecode(w, r, &input)
+	output, err := s.Callbacks.ApprovalPreview(input)
+	if err != nil {
+		action := ""
+		if input.Request != nil {
+			action = input.Request.Action
+		}
+		slog.Warn("Dynamic provider approval preview failed", "provider", s.Meta.Name, "action", action, "error", err)
+		s.writeError(w, r, http.StatusBadRequest, err.Error())
+		return
+	}
+	slog.Debug("Dynamic provider approval preview completed", "provider", s.Meta.Name, "row_count", len(output.Rows))
+	s.writeJSON(w, r, output)
 }
 
 func (s *Server) wrapPicker(w http.ResponseWriter, r *http.Request) {
