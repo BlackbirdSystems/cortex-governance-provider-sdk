@@ -55,6 +55,13 @@ type PickerConfig struct {
 	DependsOn []string `json:"depends_on,omitempty"`
 }
 
+// BindingScope names a level, other than a person's own settings, at which a
+// binding input may be set.
+type BindingScope string
+
+// BindingScopeRole lets an admin predefine the input on a role template.
+const BindingScopeRole BindingScope = "role"
+
 type BindingInputSchema struct {
 	Name         string        `json:"name"`
 	Description  string        `json:"description,omitempty"`
@@ -72,6 +79,11 @@ type BindingInputSchema struct {
 	Picker       *PickerConfig `json:"picker,omitempty"`
 	// Label is the optional human-readable name configuration UIs show.
 	Label string `json:"label,omitempty"`
+	// Scopes says where an admin may set this input beyond a person's own
+	// settings. BindingScopeRole means a role template may predefine it, so every
+	// person with the role gets the value. Empty keeps the input a person's or
+	// tenant's own setting. Never set it on a secret.
+	Scopes []BindingScope `json:"scopes,omitempty"`
 	// OAuth makes this secret's value the tenant's OAuth access token instead of
 	// a pasted setting. Source must be InputSourceOAuth and Type BindingTypeSecret;
 	// build one with OAuthSecretInput. The host connects and refreshes the token
