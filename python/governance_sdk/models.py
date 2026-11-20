@@ -75,8 +75,9 @@ class BindingInputSchema(BaseModel):
     type: BindingType = ""
     options: list[str] = Field(default_factory=list)
     picker: "PickerConfig | None" = None
-    # Where an admin may set this input beyond a person's own settings: "role"
-    # lets a role template predefine it. Never set it on a secret.
+    # Where an admin may set this input. Empty means everywhere a plain setting
+    # can be set: the tenant's own settings and a role template. ["tenant"]
+    # keeps it out of role templates. Secrets are never set on a role.
     scopes: list[str] = Field(default_factory=list)
     # Makes this secret's value the tenant's OAuth access token instead of a
     # pasted setting. Requires source == INPUT_SOURCE_OAUTH and type == "secret";
